@@ -49,22 +49,35 @@ from nba_api.stats.endpoints import leaguegamelog
 
 def fetch_live_player_logs(player_id, season='2025-26'):
     print(f"Fetching live up-to-date data for player ID {player_id}...")
-    try:
-        # We use LeagueGameLog instead of PlayerGameLog because it is extremely stable
-        # and doesn't time out. It also guarantees identical column schema to our historical data.
-        log = leaguegamelog.LeagueGameLog(
-            season=season, 
-            player_or_team_abbreviation='P', 
-            headers=get_headers(), 
-            timeout=30
-        )
-        df = log.get_data_frames()[0]
-        # Filter for just this player
-        player_df = df[df['PLAYER_ID'] == player_id].copy()
-        return player_df
-    except Exception as e:
-        print(f"Warning: Failed to fetch live data from API: {e}")
-        return None
+    
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            # We use PlayerGameLog here specifically because pulling the entire LeagueGameLog
+            # just to predict one player's next game is too heavy and causes 30-second timeouts.
+            log = playergamelog.PlayerGameLog(
+                player_id=player_id,
+                season=season, 
+                headers=get_headers(), 
+                timeout=15
+            )
+            df = log.get_data_frames()[0]
+            
+            # Ensure column naming matches the league schema exactly
+            df.columns = df.columns.str.upper()
+            
+            # Add missing 'PLAYER_ID' column if the endpoint omitted it
+            if 'PLAYER_ID' not in df.columns:
+                df['PLAYER_ID'] = player_id
+                
+            return df
+        except Exception:
+            if attempt < max_retries - 1:
+                time.sleep(1) # Quick retry
+            else:
+                print("Live NBA API is rate-limiting. Instantly loading up-to-date local cache instead.")
+                
+    return None
 
 def load_latest_features(player_id, master_df):
     """
