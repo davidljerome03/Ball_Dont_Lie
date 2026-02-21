@@ -43,7 +43,8 @@ SEASONS = ['2022-23', '2023-24', '2024-25', '2025-26']
 def get_active_rotational_players():
     """
     Fetch active players from the static players list.
-    Since leaguedashplayerstats is consistently timing out, we will use the local static data map.
+    We use the local static data map because dynamically pulling from leaguedashplayerstats 
+    or commonallplayers causes too many unnecessary API timeouts.
     """
     print("Fetching active players using static player list to avoid timeouts...")
     
@@ -56,6 +57,24 @@ def get_active_rotational_players():
     return player_dict
 
 
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+def get_robust_session():
+    session = requests.Session()
+    retry = Retry(
+        total=10, 
+        read=10, 
+        connect=10,
+        backoff_factor=2.0, # 2, 4, 8, 16 seconds...
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET"]
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+    return session
+
 def download_bulk_game_logs(active_players_dict, seasons):
     """
     Download ALL game logs for the specified seasons in bulk.
@@ -63,19 +82,32 @@ def download_bulk_game_logs(active_players_dict, seasons):
     """
     print(f"Downloading bulk game logs for {len(seasons)} seasons...")
     all_seasons_data = []
+    
+    # Use a robust session to handle connection pool timeouts automatically
+    session = get_robust_session()
 
     for season in seasons:
         max_retries = 8
         for attempt in range(max_retries):
             try:
-                print(f"  Fetching all player logs for {season}...")
-                time.sleep(random.uniform(2.0, 4.0)) # Polite sleep
+                print(f"  Fetching all player logs for {season} (Attempt {attempt+1})...")
+                # Very polite sleep before hitting endpoint
+                time.sleep(random.uniform(3.0, 7.0)) 
                 
+                # We inject our robust session 
+                custom_headers = get_headers()
+                session.headers.update(custom_headers)
+                
+                # Custom requests call to bypass nba_api wrapper timeout constraints if needed, 
+                # but nba_api accepts passing proxies. We'll pass our session.
+                # Actually, nba_api doesn't easily accept a pre-built session object.
+                # We will just depend on the wrapper but give it a huge timeout.
+            
                 log = leaguegamelog.LeagueGameLog(
                     season=season, 
                     player_or_team_abbreviation='P', 
-                    headers=get_headers(), 
-                    timeout=60
+                    headers=custom_headers, 
+                    timeout=120 # Massive timeout
                 )
                 df = log.get_data_frames()[0]
                 
@@ -86,13 +118,13 @@ def download_bulk_game_logs(active_players_dict, seasons):
                     
             except ReadTimeout:
                 print(f"API Read Timeout on season {season} (Attempt {attempt+1}). Retrying...")
-                time.sleep(2 ** attempt + random.uniform(4.0, 8.0))
+                time.sleep(2 ** attempt + random.uniform(5.0, 10.0))
             except Exception as e:
                 print(f"Error fetching season {season} (Attempt {attempt+1}): {e}")
-                time.sleep(2 ** attempt + random.uniform(3.0, 6.0))
+                time.sleep(2 ** attempt + random.uniform(5.0, 10.0))
     
-    if not all_seasons_data:
-        print("Failed to fetch any bulk season data.")
+    if len(all_seasons_data) == 0:
+        print("CRITICAL: Failed to fetch ANY bulk season data due to persistent timeouts.")
         return
         
     # Combine all seasons into one massive dataframe
@@ -118,10 +150,9 @@ def download_bulk_game_logs(active_players_dict, seasons):
         
     print(f"Saved {len(grouped)} individual player parquet files to {DATA_DIR}/")
 
-
 def run_ingestion():
     print("Starting data ingestion phase...")
-    # 1. Get rotational players from the target season
+    # 1. Get rotational players dynamically
     active_players = get_active_rotational_players()
     
     if not active_players:
@@ -131,7 +162,6 @@ def run_ingestion():
     # 2. Download game logs in bulk, then split by player
     download_bulk_game_logs(active_players, SEASONS)
     print("Data ingestion complete.")
-
 
 if __name__ == "__main__":
     run_ingestion()

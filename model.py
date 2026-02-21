@@ -41,8 +41,8 @@ def prep_for_modeling(df, target_col='PTS'):
     # Ensure all features handle NaNs (e.g., from first games without prev lag)
     df_clean = df_clean.dropna(subset=features)
     
-    X = df_clean[features]
-    y = df_clean[target_col]
+    X = df_clean[features].astype(float)
+    y = df_clean[target_col].astype(float)
     
     # Baseline projection: let's use the 5-game rolling average as our naive baseline
     baseline_preds = df_clean[f'{target_col}_5g_avg']
