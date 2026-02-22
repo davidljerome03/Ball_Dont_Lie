@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ball Don't Lie - Premium Analytics</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar / Header -->
+        <header class="top-nav">
+            <div class="logo">
+                <div class="icon-bg">
+                    <span class="icon">🏆</span>
+                </div>
+                <div>
+                    <h1>Ball Don't Lie</h1>
+                    <p>Advanced Basketball Analytics</p>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="#" class="active">Dashboard</a>
+                <a href="#">Projections</a>
+                <a href="#">Schedules</a>
+            </nav>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Cards -->
+            <section class="metrics-grid" id="metrics-grid">
+                <div class="loading-state">Loading core metrics...</div>
+            </section>
+
+            <!-- Bottom Section -->
+            <div class="split-layout">
+                <!-- Left: Games -->
+                <section class="games-section">
+                    <div class="section-header">
+                        <h2>Schedules</h2>
+                        <p id="schedule-subtitle">Loading schedule data...</p>
+                    </div>
+                    
+                    <div class="filter-tabs">
+                        <button class="tab active" data-filter="today" id="tab-today">Nearest Games</button>
+                        <button class="tab" data-filter="upcoming" id="tab-upcoming">Upcoming</button>
+                    </div>
+
+                    <div class="games-list" id="games-list">
+                        <!-- Injected via JS -->
+                    </div>
+                </section>
+
+                <!-- Right: Projections -->
+                <section class="projections-section">
+                    <div class="section-header">
+                        <h2>Top Player Projections</h2>
+                        <p>Based on ML predictive models</p>
+                    </div>
+                    <div class="players-list" id="players-list">
+                        <!-- Injected via JS -->
+                        <div class="loading-state">Loading player projections...</div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    
+    <!-- PapaParse for parsing local CSV files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
