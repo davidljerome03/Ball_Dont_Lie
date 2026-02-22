@@ -7,6 +7,7 @@
     <title>Ball Don't Lie - Premium Analytics</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 </head>
 
 <body>
@@ -15,7 +16,7 @@
         <header class="top-nav">
             <div class="logo">
                 <div class="icon-bg">
-                    <span class="icon">🏆</span>
+                    <span class="icon">🏀</span>
                 </div>
                 <div>
                     <h1>Ball Don't Lie</h1>
@@ -23,23 +24,22 @@
                 </div>
             </div>
             <nav class="nav-links">
-                <a href="#" class="active">Dashboard</a>
-                <a href="#">Projections</a>
-                <a href="#">Schedules</a>
+                <a href="#" class="nav-btn active" data-target="view-dashboard">Dashboard</a>
+                <a href="#" class="nav-btn" data-target="view-projections">Projections</a>
             </nav>
         </header>
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Top Cards -->
-            <section class="metrics-grid" id="metrics-grid">
-                <div class="loading-state">Loading core metrics...</div>
-            </section>
+            <!-- DASHBOARD VIEW -->
+            <div id="view-dashboard" class="view active">
+                <!-- Top Cards -->
+                <section class="metrics-grid" id="metrics-grid">
+                    <div class="loading-state">Loading core metrics...</div>
+                </section>
 
-            <!-- Bottom Section -->
-            <div class="split-layout">
-                <!-- Left: Games -->
-                <section class="games-section">
+                <!-- Bottom Section -->
+                <section class="games-section" style="margin-top: 2rem;">
                     <div class="section-header">
                         <h2>Schedules</h2>
                         <p id="schedule-subtitle">Loading schedule data...</p>
@@ -50,23 +50,38 @@
                         <button class="tab" data-filter="upcoming" id="tab-upcoming">Upcoming</button>
                     </div>
 
-                    <div class="games-list" id="games-list">
+                    <div class="games-list" id="games-list"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 1.5rem;">
                         <!-- Injected via JS -->
                     </div>
                 </section>
+            </div> <!-- End Dashboard View -->
 
-                <!-- Right: Projections -->
-                <section class="projections-section">
-                    <div class="section-header">
-                        <h2>Top Player Projections</h2>
-                        <p>Based on ML predictive models</p>
+            <!-- PROJECTIONS VIEW (Dedicated) -->
+            <div id="view-projections" class="view hidden">
+                <div class="section-header" style="margin-bottom: 2rem;">
+                    <h2>Full Player Projections</h2>
+                    <p>Comprehensive ML predictions for all upcoming players</p>
+                </div>
+                <div class="projections-section">
+                    <div class="section-header"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <input type="text" id="player-search" class="search-input" placeholder="Search players...">
+                        <select id="full-proj-stat-filter" class="stat-filter-select">
+                            <option value="PTS">Points (PTS)</option>
+                            <option value="PRA">PRA (Pts+Reb+Ast)</option>
+                            <option value="REB">Rebounds (REB)</option>
+                            <option value="AST">Assists (AST)</option>
+                        </select>
                     </div>
-                    <div class="players-list" id="players-list">
+                    <!-- Reuse the same grid style but wider -->
+                    <div class="players-list full-page" id="full-players-list"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
                         <!-- Injected via JS -->
-                        <div class="loading-state">Loading player projections...</div>
                     </div>
-                </section>
+                </div>
             </div>
+
         </main>
     </div>
 

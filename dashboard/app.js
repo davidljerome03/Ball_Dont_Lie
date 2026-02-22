@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
 let gamesData = [];
 let projectionsData = [];
 let currentFilter = 'today';
+let currentProjStat = 'PTS';
+let searchQuery = '';
 
 async function initDashboard() {
     try {
@@ -62,6 +64,38 @@ function setupEventListeners() {
             renderGames();
         });
     });
+
+    // SPA Navigation
+    const navBtns = document.querySelectorAll('.nav-btn');
+    navBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            navBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const targetId = btn.getAttribute('data-target');
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(targetId).classList.add('active');
+        });
+    });
+
+    // Projections Stat Filter
+    const filterSelect = document.getElementById('full-proj-stat-filter');
+    if (filterSelect) {
+        filterSelect.addEventListener('change', (e) => {
+            currentProjStat = e.target.value;
+            renderProjections();
+        });
+    }
+
+    // Player Search Filter
+    const searchInput = document.getElementById('player-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value.toLowerCase();
+            renderProjections();
+        });
+    }
 }
 
 function renderDashboard() {
@@ -108,7 +142,7 @@ function renderMetrics() {
     metricsGrid.innerHTML = `
         <div class="metric-card">
             <div class="metric-icon">👥</div>
-            <h3>Schedules</h3>
+            <h3>Scheduled Games</h3>
             <div class="value">${gamesToday}</div>
             <div class="subtext">Games on ${todayStr}</div>
         </div>
@@ -190,29 +224,59 @@ function renderGames() {
 }
 
 function renderProjections() {
-    const playersList = document.getElementById('players-list');
+    renderProjectionList(document.getElementById('full-players-list'), 100);
+}
 
-    const validPlayers = projectionsData.filter(p => !isNaN(parseFloat(p.PREDICTED_PTS)));
-    validPlayers.sort((a, b) => parseFloat(b.PREDICTED_PTS) - parseFloat(a.PREDICTED_PTS));
+function renderProjectionList(container, limit) {
+    if (!container) return;
 
-    // We only show top 10 players to keep UI clean
-    const topPlayers = validPlayers.slice(0, 10);
+    const statCol = `PREDICTED_${currentProjStat}`;
+
+    // Ensure players have data for this stat
+    let validPlayers = projectionsData.filter(p => !isNaN(parseFloat(p[statCol])));
+
+    if (searchQuery) {
+        validPlayers = validPlayers.filter(p => p.PLAYER_NAME.toLowerCase().includes(searchQuery));
+    }
+
+    validPlayers.sort((a, b) => parseFloat(b[statCol]) - parseFloat(a[statCol]));
+
+    const topPlayers = validPlayers.slice(0, limit);
 
     if (topPlayers.length === 0) {
-        playersList.innerHTML = `<p class="loading-state">No projections found.</p>`;
+        container.innerHTML = `<p class="loading-state">No projections found.</p>`;
         return;
     }
 
-    playersList.innerHTML = topPlayers.map(p => {
+    container.innerHTML = topPlayers.map(p => {
         const pPts = parseFloat(p.PREDICTED_PTS).toFixed(1);
         const pReb = parseFloat(p.PREDICTED_REB).toFixed(1);
         const pAst = parseFloat(p.PREDICTED_AST).toFixed(1);
         const pPra = parseFloat(p.PREDICTED_PRA).toFixed(1);
-        const baseline = p.BASELINE_5G_PTS ? parseFloat(p.BASELINE_5G_PTS).toFixed(1) : pPts;
 
-        const diff = (pPts - baseline).toFixed(1);
+        let primaryVal = 0, primaryLabel = '';
+        let microStats = [];
+
+        if (currentProjStat === 'PTS') {
+            primaryVal = pPts; primaryLabel = 'PTS';
+            microStats = [{ l: 'REB', v: pReb }, { l: 'AST', v: pAst }, { l: 'PRA', v: pPra }];
+        } else if (currentProjStat === 'REB') {
+            primaryVal = pReb; primaryLabel = 'REB';
+            microStats = [{ l: 'PTS', v: pPts }, { l: 'AST', v: pAst }, { l: 'PRA', v: pPra }];
+        } else if (currentProjStat === 'AST') {
+            primaryVal = pAst; primaryLabel = 'AST';
+            microStats = [{ l: 'PTS', v: pPts }, { l: 'REB', v: pReb }, { l: 'PRA', v: pPra }];
+        } else {
+            primaryVal = pPra; primaryLabel = 'PRA';
+            microStats = [{ l: 'PTS', v: pPts }, { l: 'REB', v: pReb }, { l: 'AST', v: pAst }];
+        }
+
+        const baseline = p.BASELINE_5G_PTS ? parseFloat(p.BASELINE_5G_PTS).toFixed(1) : pPts;
+        const diff = (parseFloat(p.PREDICTED_PTS) - baseline).toFixed(1);
         const diffColor = diff > 0 ? 'var(--accent-green)' : (diff < 0 ? '#ef4444' : 'var(--text-secondary)');
         const diffText = diff > 0 ? `+${diff}` : diff;
+
+        const microHtml = microStats.map(m => `<div class="micro-stat">${m.l}<strong>${m.v}</strong></div>`).join('');
 
         return `
             <div class="player-card">
@@ -220,15 +284,13 @@ function renderProjections() {
                     <h4>${p.PLAYER_NAME}</h4>
                     <p>${p.TEAM} vs ${p.OPPONENT}</p>
                     <div class="stat-grid">
-                        <div class="micro-stat">REB<strong>${pReb}</strong></div>
-                        <div class="micro-stat">AST<strong>${pAst}</strong></div>
-                        <div class="micro-stat">PRA<strong>${pPra}</strong></div>
+                        ${microHtml}
                     </div>
                 </div>
                 <div class="player-stats">
-                    <div class="stat-primary">${pPts} PTS</div>
-                    <div class="stat-secondary" style="color: ${diffColor}">
-                        ${diff == 0 ? 'Avg Match' : `${diffText} proj diff`}
+                    <div class="stat-primary">${primaryVal} ${primaryLabel}</div>
+                    <div class="stat-secondary" style="color: ${currentProjStat === 'PTS' ? diffColor : 'var(--text-secondary)'}">
+                        ${currentProjStat === 'PTS' ? (diff == 0 ? 'Avg Match' : `${diffText} proj diff`) : ''}
                     </div>
                 </div>
             </div>
