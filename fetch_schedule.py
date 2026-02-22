@@ -13,8 +13,8 @@ def fetch_remaining_schedule(start_date=None, end_date=None):
     It iterates day by day to avoid massive payloads that might timeout or get blocked.
     """
     if start_date is None:
-        # Start from tomorrow by default
-        start_date = datetime.date.today() + datetime.timedelta(days=1)
+        # Start from today
+        start_date = datetime.date.today()
     
     if end_date is None:
         # End of regular season is roughly mid-April
@@ -61,6 +61,7 @@ def fetch_remaining_schedule(start_date=None, end_date=None):
                     
                     game = {
                         'GAME_DATE': current_date.strftime('%Y-%m-%d'),
+                        'GAME_TIME': row.get('GAME_STATUS_TEXT', 'TBD'),
                         'GAME_ID': row['GAME_ID'],
                         'HOME_TEAM': home_team,
                         'AWAY_TEAM': away_team,

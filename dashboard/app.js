@@ -12,7 +12,7 @@ async function initDashboard() {
             loadGames(),
             loadProjections()
         ]);
-        
+
         setupEventListeners();
         renderDashboard();
     } catch (err) {
@@ -23,7 +23,7 @@ async function initDashboard() {
 
 async function loadGames() {
     return new Promise((resolve, reject) => {
-        Papa.parse('../data/upcoming_games.csv', {
+        Papa.parse('../data/upcoming_games.csv?v=' + new Date().getTime(), {
             download: true,
             header: true,
             skipEmptyLines: true,
@@ -39,7 +39,7 @@ async function loadGames() {
 
 async function loadProjections() {
     return new Promise((resolve, reject) => {
-        Papa.parse('../data/upcoming_projections.csv', {
+        Papa.parse('../data/upcoming_projections.csv?v=' + new Date().getTime(), {
             download: true,
             header: true,
             skipEmptyLines: true,
@@ -75,23 +75,27 @@ function getEarliestDate() {
     if (gamesData.length > 0) {
         const dates = gamesData.map(g => g.GAME_DATE).filter(d => d);
         dates.sort();
-        return dates[0] || new Date().toISOString().split('T')[0];
+        return dates[0];
     }
-    return new Date().toISOString().split('T')[0];
+
+    // Fallback if no games exist (timezone safe)
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000;
+    return new Date(today - tzOffset).toISOString().split('T')[0];
 }
 
 function renderMetrics() {
     const todayStr = getEarliestDate();
-    
+
     // 1. Games Today
     const gamesToday = gamesData.filter(g => g.GAME_DATE === todayStr).length;
-    
+
     // 2. Upcoming Scheduled
     const upcomingGames = gamesData.filter(g => g.GAME_DATE > todayStr).length;
-    
+
     // Clean projections
     const validProjections = projectionsData.filter(p => !isNaN(parseFloat(p.PREDICTED_PTS)));
-    
+
     // 3. Top Projected Scorer
     const scorers = [...validProjections].sort((a, b) => parseFloat(b.PREDICTED_PTS) - parseFloat(a.PREDICTED_PTS));
     const topScorer = scorers.length > 0 ? scorers[0] : null;
@@ -133,7 +137,7 @@ function renderGames() {
     const todayStr = getEarliestDate();
     const gamesList = document.getElementById('games-list');
     const subtitle = document.getElementById('schedule-subtitle');
-    
+
     let filteredGames = [];
     if (currentFilter === 'today') {
         filteredGames = gamesData.filter(g => g.GAME_DATE === todayStr);
@@ -148,6 +152,22 @@ function renderGames() {
         return;
     }
 
+    // Sort games chronologically by tip-off time
+    filteredGames.sort((a, b) => {
+        const parseTime = (timeStr) => {
+            if (!timeStr || timeStr === 'TBD' || timeStr.includes('undefined')) return 2400;
+            let match = timeStr.match(/(\d+):(\d+)\s*(am|pm)/i);
+            if (!match) return 2400;
+            let hours = parseInt(match[1]);
+            let mins = parseInt(match[2]);
+            let ampm = match[3].toLowerCase();
+            if (ampm === 'pm' && hours < 12) hours += 12;
+            if (ampm === 'am' && hours === 12) hours = 0;
+            return hours * 60 + mins;
+        };
+        return parseTime(a.GAME_TIME) - parseTime(b.GAME_TIME);
+    });
+
     gamesList.innerHTML = filteredGames.slice(0, 15).map(g => {
         const isToday = g.GAME_DATE === todayStr;
         return `
@@ -157,7 +177,7 @@ function renderGames() {
                     <div class="team-role">★ Home</div>
                 </div>
                 <div class="match-info">
-                    <div class="time-badge" style="${!isToday ? 'background: var(--accent-blue);' : ''}">${isToday ? 'Tonight' : g.GAME_DATE}</div>
+                    <div class="time-badge" style="${!isToday ? 'background: var(--accent-blue);' : ''}">${isToday ? 'Tonight' : g.GAME_DATE}<br/><small style="opacity: 0.8">${g.GAME_TIME}</small></div>
                     <div class="vs">VS</div>
                 </div>
                 <div class="team away">
@@ -171,10 +191,10 @@ function renderGames() {
 
 function renderProjections() {
     const playersList = document.getElementById('players-list');
-    
+
     const validPlayers = projectionsData.filter(p => !isNaN(parseFloat(p.PREDICTED_PTS)));
     validPlayers.sort((a, b) => parseFloat(b.PREDICTED_PTS) - parseFloat(a.PREDICTED_PTS));
-    
+
     // We only show top 10 players to keep UI clean
     const topPlayers = validPlayers.slice(0, 10);
 
@@ -189,7 +209,7 @@ function renderProjections() {
         const pAst = parseFloat(p.PREDICTED_AST).toFixed(1);
         const pPra = parseFloat(p.PREDICTED_PRA).toFixed(1);
         const baseline = p.BASELINE_5G_PTS ? parseFloat(p.BASELINE_5G_PTS).toFixed(1) : pPts;
-        
+
         const diff = (pPts - baseline).toFixed(1);
         const diffColor = diff > 0 ? 'var(--accent-green)' : (diff < 0 ? '#ef4444' : 'var(--text-secondary)');
         const diffText = diff > 0 ? `+${diff}` : diff;
