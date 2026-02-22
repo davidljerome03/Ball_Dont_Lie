@@ -49,16 +49,30 @@
 
                         <div class="filter-header"
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                            <div class="filter-tabs" style="margin-bottom: 0;">
-                                <button class="tab active" data-filter="today" id="tab-today">Today's Games</button>
-                                <button class="tab" data-filter="upcoming" id="tab-upcoming">Upcoming</button>
+                            <div style="display: flex; gap: 1rem; align-items: center;">
+                                <div class="filter-tabs" style="margin-bottom: 0; margin-top: 0;">
+                                    <button class="tab active" data-filter="today" id="tab-today">Today's Games</button>
+                                    <button class="tab" data-filter="upcoming" id="tab-upcoming">Upcoming</button>
+                                </div>
+                                <input type="text" id="game-search" class="search-input" placeholder="Search Teams"
+                                    style="width: 250px; padding: 0.6rem 1.2rem; border-radius: 20px; border: 1px solid var(--border-color); outline: none; font-size: 0.95rem; background: var(--card-bg); color: var(--text-primary); transition: all 0.2s;">
                             </div>
-                            <div class="pagination-controls" style="display: flex; gap: 0.5rem; align-items: center;">
-                                <button id="prev-page" class="icon-btn" disabled>&larr;</button>
+                            <div class="pagination-controls" style="display: flex; gap: 0.8rem; align-items: center;">
+                                <button id="prev-page" class="icon-btn" disabled>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M19 12H5M12 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
                                 <span id="page-indicator"
-                                    style="font-size: 0.9rem; color: var(--text-secondary); min-width: 50px; text-align: center;">1
+                                    style="font-size: 0.95rem; color: var(--text-secondary); min-width: 45px; text-align: center; font-weight: 500;">1
                                     / 1</span>
-                                <button id="next-page" class="icon-btn">&rarr;</button>
+                                <button id="next-page" class="icon-btn">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
 

@@ -181,6 +181,9 @@ body {
     display: grid;
     grid-template-columns: 1.8fr 1.2fr;
     gap: 2rem;
+    flex: 1;
+    min-height: 0;
+    /* Firefox flex fix */
 }
 
 @media (max-width: 1024px) {
@@ -215,8 +218,10 @@ body {
     height: 4px;
     background-color: var(--border-color);
     border-radius: 4px;
-    margin-top: 1rem;
+    margin-top: auto;
+    /* Push down to bottom */
     overflow: hidden;
+    flex-shrink: 0;
 }
 
 .progress-bar {
@@ -274,27 +279,27 @@ body {
 
 /* Pagination Controls */
 .icon-btn {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    width: 32px;
-    height: 32px;
+    background: #5468ff;
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 1.1rem;
 }
 
 .icon-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: #3a5ce5;
 }
 
 .icon-btn:disabled {
-    opacity: 0.4;
+    background: #b0bcf9;
+    color: white;
+    opacity: 1;
     cursor: not-allowed;
 }
 

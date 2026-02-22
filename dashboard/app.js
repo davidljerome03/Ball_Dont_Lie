@@ -11,6 +11,7 @@ let searchQuery = '';
 // Pagination State
 let currentGamesPage = 1;
 const GAMES_PER_PAGE = 5;
+let gameSearchQuery = '';
 
 // Slideshow State
 const slideshowCategories = ['PTS', 'REB', 'AST', 'PRA'];
@@ -87,6 +88,16 @@ function setupEventListeners() {
         });
         nextBtn.addEventListener('click', () => {
             currentGamesPage++;
+            renderGames();
+        });
+    }
+
+    // Games Search Filter
+    const gameSearchInput = document.getElementById('game-search');
+    if (gameSearchInput) {
+        gameSearchInput.addEventListener('input', (e) => {
+            gameSearchQuery = e.target.value.toLowerCase();
+            currentGamesPage = 1; // reset page on search
             renderGames();
         });
     }
@@ -213,6 +224,16 @@ function renderGames() {
         return;
     }
 
+    // Filter by Search Query
+    if (gameSearchQuery) {
+        filteredGames = filteredGames.filter(g =>
+            g.HOME_TEAM.toLowerCase().includes(gameSearchQuery) ||
+            g.AWAY_TEAM.toLowerCase().includes(gameSearchQuery) ||
+            `${g.HOME_TEAM} vs ${g.AWAY_TEAM}`.toLowerCase().includes(gameSearchQuery) ||
+            `${g.AWAY_TEAM} @ ${g.HOME_TEAM}`.toLowerCase().includes(gameSearchQuery)
+        );
+    }
+
     // Sort games chronologically by date first, then by tip-off time
     filteredGames.sort((a, b) => {
         if (a.GAME_DATE !== b.GAME_DATE) {
@@ -261,7 +282,10 @@ function renderGames() {
                     <div class="team-role">★ Home</div>
                 </div>
                 <div class="match-info">
-                    <div class="time-badge" style="${!isToday ? 'background: var(--accent-blue);' : ''}">${isToday ? 'Tonight' : g.GAME_DATE}<br/><small style="opacity: 0.8">${g.GAME_TIME}</small></div>
+                    <div class="time-badge" style="padding: 0.5rem 1rem; ${!isToday ? 'background: var(--accent-blue);' : ''}">
+                        <div style="font-size: 1.1rem; font-weight: bold;">${g.GAME_TIME}</div>
+                        <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 0.1rem;">${g.GAME_DATE}</div>
+                    </div>
                     <div class="vs">VS</div>
                 </div>
                 <div class="team away">
